@@ -11,3 +11,20 @@ dependencies = [
     "pymupdf>=1.26.3",
     "python-dotenv>=1.1.1",
 ]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16.1",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=0.26.0",
+    "ruff>=0.12.2",
+    "nox>=2025.5.1",
+    "pre-commit>=4.2.0",
+    "pytest-cov>=6.2.1",
+    "pytest-doctestplus>=1.4.0",
+    "isort>=6.0.1",
+]
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"

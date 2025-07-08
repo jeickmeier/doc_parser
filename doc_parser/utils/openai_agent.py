@@ -1,10 +1,10 @@
-from agents import Agent, Runner
+from agents import Agent, Runner, ModelSettings
 from dotenv import load_dotenv
 import logging
 import os
 import asyncio
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 logger.info("Loading environment variables")
@@ -12,13 +12,13 @@ load_dotenv(override=True)
 logger.info("OPENAI_API_KEY: %s", os.getenv("OPENAI_API_KEY"))
 
 class OpenAIAgent:
-    def __init__(self, model_name: str = "gpt-4o-mini"):
+    def __init__(self, model_name: str = "gpt-4.1-nano"):
         self.model_name = model_name
         self.messages = []
         self.agent = None
         self.runner = None
 
-    async def _vision_agent(self, prompt: str, image_base64: str):
+    async def _vision_agent(self, prompt: str, image_base64: str, temperature: float = 0.0):
         
         self.agent = Agent(
             name="VisionExtractor",
@@ -28,6 +28,7 @@ class OpenAIAgent:
                 "content—no additional commentary."
             ),
             model=self.model_name,
+            model_settings=ModelSettings(temperature=temperature)
         )
 
         self.messages = [
@@ -71,11 +72,36 @@ class OpenAIAgent:
             try:
                 result = await Runner.run(self.agent, self.messages)
 
-                # Treat `None` or empty responses as failures warranting a
-                # retry—this covers cases where the run "didn't finish" but
-                # did not throw an exception.
-                if result is None or (isinstance(result, str) and not result.strip()):
-                    raise RuntimeError("Runner returned no result; retrying …")
+                # Additional robustness:
+                # 1. Treat an *empty* ``final_output`` string (e.g. "") as a failure.
+                # 2. Treat responses that explicitly contain the phrase "204 No Content" or
+                #    "No Content" (observed when the OpenAI endpoint returns HTTP 204)
+                #    as failures.  These scenarios have been observed to yield unusable
+                #    results, so we re-attempt the run with exponential back-off.
+
+                def _is_empty_or_no_content(value):
+                    """Return True if *value* is an empty / whitespace string or contains
+                    indicators of a 204‐response with no content."""
+
+                    if not isinstance(value, str):
+                        return False
+
+                    cleaned = value.strip().lower()
+                    return (
+                        cleaned == ""  # empty string
+                        or "no content" in cleaned  # matches '204 No Content' etc.
+                        or "204" == cleaned  # rare case where only the status code appears
+                    )
+
+                final_output = getattr(result, "final_output", None)
+
+                if (
+                    result is None
+                    or (isinstance(result, str) and not result.strip())
+                    or final_output is None
+                    or _is_empty_or_no_content(final_output)
+                ):
+                    raise RuntimeError("Runner returned no or empty content; retrying …")
 
                 return result
 
