@@ -8,3 +8,11 @@ wheels/
 
 # Virtual environments
 .venv
+.env
+
+# Artifacts
+extract_images/
+output_images/
+inputs/
+
+
