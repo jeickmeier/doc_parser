@@ -29,3 +29,170 @@ dev = [
 [build-system]
 requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
+
+#######################
+# Ruff Configuration
+#######################
+
+# Ruff Configuration
+[tool.ruff]
+line-length = 120
+target-version = "py312" # Ensure compatibility with Python 3.12
+exclude = [
+    "tests/**",
+    "concatenate_script.py",
+    "scripts/**",
+    "examples/notebooks/**",
+    ".cursor/**",
+    ".mypy_cache/**",
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    "docs/**",
+    ".coverage",
+    "dist/**",
+    ".venv/**",
+    "concatenate_script.py",
+    "examples/notebooks/**",
+    "noxfile.py",
+    "requirements.txt",
+    "pyproject.toml",
+    "examples/scripts/**",
+    "examples/**",
+]
+
+[tool.ruff.lint]
+select = [
+    # ── Core style / correctness ───────────────────────────────
+    "E", "F", "W",              # pycodestyle / pyflakes
+    "ANN", "D",                 # typing & docstrings
+    "UP", "S", "SIM",           # pyupgrade, security, simplification
+    "T20", "TID",               # print-stmt, tidy-imports
+    "TRY", "ERA",               # try/except, commented-out code
+    "PL", "PT", "Q",            # pylint, pytest, quotes
+    "RUF", "PERF", "PIE",       # Ruff-specific, performance, misc PIE
+    "YTT", "EXE",               # sys.version, executable checks
+
+    # ── Add-ons for tighter quality ────────────────────────────
+    "B",    # flake8-bugbear           – probable bugs & bad practices
+    "N",    # pep8-naming              – PEP-8 identifiers
+    "I",    # import ordering (isort)  – deterministic imports
+    "C4",   # comprehensions           – needless list(set(..)), etc.
+    "ARG",  # unused-arguments         – dead param detection
+    "TCH",  # type-checking            – guard imports w/ TYPE_CHECKING
+    "BLE",  # blind-except             – forbid bare `except:`
+    "C90",  # mccabe complexity        – flags "god" functions
+
+    # ── File & logging hygiene ─────────────────────────────────
+    "PTH",  # flake8-use-pathlib       – prefer pathlib APIs
+    "LOG",  # flake8-logging           – logger misuse
+    "G",    # flake8-logging-format    – message formatting issues
+]
+
+ignore = [
+    "TRY301", # Abstract raise to inner function - hurts readability here
+    "TRY003", # Avoid specifying long messages outside the exception class - allow for context
+    "E501",   # Line too long - sometimes necessary  TODO: plan to remove this through formatting
+    "ANN401", # allow Any types - TODO: plan to remove this
+    "PLR0913",# Too many arguments - sometimes necessary - TODO: plan to remove this
+    "PLR0912",# Too many branches - complexity acceptable for now - TODO: plan to remove this
+    "PLC0415",  # pylint complexity        – flags "god" functions
+    # "UP047",    # Unnecessary pass (removed for ruff compatibility)
+    # "UP046",    # Unnecessary pass (removed for ruff compatibility)
+]
+
+# Configuration for pydocstyle (D rules)
+[tool.ruff.lint.pydocstyle]
+convention = "google" # Enforce Google-style docstrings
+
+# Configuration for flake8-annotations (ANN rules)
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true          # Require __init__ to have no return type annotation
+suppress-none-returning = true   # Don't require annotation for functions that don't return None explicitly
+allow-star-arg-any = true        # Allow *args and **kwargs without explicit types for now
+
+# Configuration for formatting (using ruff format)
+# This section remains top-level as it configures the formatter
+[tool.ruff.format]
+quote-style = "double"
+docstring-code-format = true     # auto-format snippets
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+preview = true         # adopt next-year style early
+
+# ---------------------------------
+#  isort settings (for "I" rules)
+# ---------------------------------
+[tool.ruff.lint.isort]
+known-first-party   = ["doc_parser"]   # add your own modules here
+combine-as-imports  = true
+force-sort-within-sections = true
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+
+#######################
+# MyPy Configuration
+#######################
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ['pydantic.mypy']
+exclude = '^(tests/|examples/|scripts/|concatenate_script\.py$)'
+
+# Per-package overrides migrated from mypy.ini
+[[tool.mypy.overrides]]
+module = [
+    "pandas.*",
+    "pandas.api.types",
+    "requests.*",
+    "numpy.*",
+    "asteval.*",
+    "agents.*",
+    "agents",
+    "fitz.*",
+    "fitz",
+]
+ignore_missing_imports = true
+
+
+#######################
+# Pytest Configuration
+#######################
+
+[tool.coverage.run]
+source = ["doc_parser"]
+omit = [
+    "tests/*",
+    # Tests directory only
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "pass",
+    "raise ImportError",
+    "except ImportError:",
+    "if __name__ == .__main__.:",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+
+# Pytest general options (migrated from pytest.ini)
+addopts = "-q --cov=doc_parser --cov-report=term-missing --cov-config=pyproject.toml"
+
+# Match asyncio plugin behaviour from pytest.ini
+asyncio_default_fixture_loop_scope = "module"
+
+# Warnings configuration
+filterwarnings = [
+    # Ignore the specific DeprecationWarning from pydantic about utcnow()
+    "ignore:datetime.datetime.utcnow.. is deprecated:DeprecationWarning:pydantic.main",
+]
