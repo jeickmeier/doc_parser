@@ -311,6 +311,7 @@ dependencies = [
     { name = "asyncio" },
     { name = "ipykernel" },
     { name = "openai-agents" },
+    { name = "pydantic" },
     { name = "pymupdf" },
     { name = "python-dotenv" },
 ]
@@ -333,6 +334,7 @@ requires-dist = [
     { name = "asyncio", specifier = ">=3.4.3" },
     { name = "ipykernel", specifier = ">=6.29.5" },
     { name = "openai-agents", specifier = ">=0.1.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pymupdf", specifier = ">=1.26.3" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
 ]

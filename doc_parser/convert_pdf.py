@@ -43,13 +43,11 @@ DEFAULT_VISION_PROMPT = r"""
 
 """
 
-class PDFConverter:
 
-    def __init__(self, 
-                 pdf_path: str, 
-                 dpi: int = 150, 
-                 max_workers: Optional[int] = None
-                 ):
+class PDFConverter:
+    def __init__(
+        self, pdf_path: str, dpi: int = 150, max_workers: Optional[int] = None
+    ):
         self.pdf_path = pdf_path
         self.doc = fitz.open(pdf_path)
         self.page_count = len(self.doc)
@@ -102,19 +100,25 @@ class PDFConverter:
             # executor.map automatically iterates through enumerate(self.images)
             list(executor.map(_save, enumerate(self.images)))
 
-    async def _convert_to_markdown(self, page_number: int, prompt: str, model_name: str = "gpt-4.1-nano", temperature: float = 0.0):
-        """Convert the PDF to markdown.
-        """
+    async def _convert_to_markdown(
+        self,
+        page_number: int,
+        prompt: str,
+        model_name: str = "gpt-4.1-nano",
+        temperature: float = 0.0,
+    ):
+        """Convert the PDF to markdown."""
         agent = OpenAIAgent(model_name=model_name)
         image_bytes = self.images[page_number].tobytes()
-        image_b64   = base64.b64encode(image_bytes).decode("utf-8")
+        image_b64 = base64.b64encode(image_bytes).decode("utf-8")
         await agent._vision_agent(prompt, image_b64, temperature)
         result = await agent.run()
         return result
-    
-    async def _convert_to_markdown_all(self, prompt: str, model_name: str = "gpt-4.1-nano", temperature: float = 0.0):
-        """Convert the PDF to markdown.
-        """
+
+    async def _convert_to_markdown_all(
+        self, prompt: str, model_name: str = "gpt-4.1-nano", temperature: float = 0.0
+    ):
+        """Convert the PDF to markdown."""
         import asyncio
 
         # Fallback to using number of pages as workers if not specified
@@ -135,18 +139,19 @@ class PDFConverter:
 
         self.output_parsed = results
 
-
-    async def convert_to_markdown(self, prompt: str = DEFAULT_VISION_PROMPT, model_name: str = "gpt-4.1-nano", temperature: float = 0.0):
-        """Convert the PDF to markdown.
-        """
-        #Check if images are available
+    async def convert_to_markdown(
+        self,
+        prompt: str = DEFAULT_VISION_PROMPT,
+        model_name: str = "gpt-4.1-nano",
+        temperature: float = 0.0,
+    ):
+        """Convert the PDF to markdown."""
+        # Check if images are available
         if len(self.images) == 0:
             self._pdf_to_images()
 
-        #Check if markdown is available
+        # Check if markdown is available
         await self._convert_to_markdown_all(prompt, model_name, temperature)
 
-    
     def get_markdown(self):
         return "\n".join([i.final_output for i in self.output_parsed])
-

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import logging
 import os
 import asyncio
+from pydantic import BaseModel
 
 
 logger = logging.getLogger(__name__)
@@ -11,15 +12,20 @@ logger.info("Loading environment variables")
 load_dotenv(override=True)
 logger.info("OPENAI_API_KEY: %s", os.getenv("OPENAI_API_KEY"))
 
+
 class OpenAIAgent:
-    def __init__(self, model_name: str = "gpt-4.1-nano"):
+    def __init__(self, model_name: str = "gpt-4.1-nano", temperature: float = 0.0):
         self.model_name = model_name
+        self.temperature = temperature
         self.messages = []
         self.agent = None
-        self.runner = None
 
-    async def _vision_agent(self, prompt: str, image_base64: str, temperature: float = 0.0):
-        
+    async def _vision_agent(
+        self, prompt: str, image_base64: str, temperature: float = None
+    ):
+        if temperature is None:
+            temperature = self.temperature
+
         self.agent = Agent(
             name="VisionExtractor",
             instructions=(
@@ -28,7 +34,7 @@ class OpenAIAgent:
                 "content—no additional commentary."
             ),
             model=self.model_name,
-            model_settings=ModelSettings(temperature=temperature)
+            model_settings=ModelSettings(temperature=temperature),
         )
 
         self.messages = [
@@ -45,20 +51,37 @@ class OpenAIAgent:
             }
         ]
 
-    async def _text_agent(self, prompt: str, context: str, temperature: float = 0.0, output_format: str = "markdown"):
+    async def _text_agent(
+        self,
+        prompt: str,
+        context: str,
+        temperature: float = None,
+        output_format: str | BaseModel = "markdown",
+    ):
+        if temperature is None:
+            temperature = self.temperature
 
-        self.agent = Agent(
-            name="TextExtractor",
-            instructions=prompt,
-            model=self.model_name,
-            model_settings=ModelSettings(temperature=temperature)
-        )
+        if output_format == "markdown":
+            self.agent = Agent(
+                name="TextExtractor",
+                instructions=prompt,
+                model=self.model_name,
+                model_settings=ModelSettings(temperature=temperature),
+            )
+        elif isinstance(output_format, BaseModel):
+            self.agent = Agent(
+                name="TextExtractor",
+                instructions=prompt,
+                model=self.model_name,
+                output_type=output_format,
+                model_settings=ModelSettings(temperature=temperature),
+            )
 
         self.messages = [
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_text", "text": context},                    
+                    {"type": "input_text", "text": context},
                     {"type": "input_text", "text": prompt},
                 ],
             }
@@ -109,7 +132,8 @@ class OpenAIAgent:
                     return (
                         cleaned == ""  # empty string
                         or "no content" in cleaned  # matches '204 No Content' etc.
-                        or "204" == cleaned  # rare case where only the status code appears
+                        or "204"
+                        == cleaned  # rare case where only the status code appears
                     )
 
                 final_output = getattr(result, "final_output", None)
@@ -120,7 +144,9 @@ class OpenAIAgent:
                     or final_output is None
                     or _is_empty_or_no_content(final_output)
                 ):
-                    raise RuntimeError("Runner returned no or empty content; retrying …")
+                    raise RuntimeError(
+                        "Runner returned no or empty content; retrying …"
+                    )
 
                 return result
 
