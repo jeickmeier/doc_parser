@@ -45,6 +45,25 @@ class OpenAIAgent:
             }
         ]
 
+    async def _text_agent(self, prompt: str, context: str, temperature: float = 0.0, output_format: str = "markdown"):
+
+        self.agent = Agent(
+            name="TextExtractor",
+            instructions=prompt,
+            model=self.model_name,
+            model_settings=ModelSettings(temperature=temperature)
+        )
+
+        self.messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": context},                    
+                    {"type": "input_text", "text": prompt},
+                ],
+            }
+        ]
+
     async def run(
         self,
         *,

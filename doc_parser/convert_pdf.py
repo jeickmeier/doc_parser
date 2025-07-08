@@ -34,7 +34,7 @@ DEFAULT_VISION_PROMPT = r"""
 
     ### Formulas and Equations
     - Write mathematical formulas in LaTeX format enclosed in $ for inline or $$ for block equations.
-    - Example: $E = mc^2$ or $$\int_{{a}}^{{b}} f(x) dx$$
+    - Example: $E = mc^2$ or $$\int_{a}^{b} f(x) dx$$
 
     ### Figures, Charts, and Diagrams
     - For diagrams, the description should be a text-based representation of the diagram with enough detail to understand the content.
